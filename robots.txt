@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://alcaintegra.github.io/sitemap.xml
