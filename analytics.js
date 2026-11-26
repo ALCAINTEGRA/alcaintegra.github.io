@@ -1,14 +1,18 @@
 /* ALCAINTEGRA Analytics — public website and synthetic demo only.
  * Activation requires the owner's GA4 web measurement ID and reviewed privacy disclosure.
- * Empty ID = no tracking, external requests, cookies or consent interface.
+ * Disabled switch = no tracking, external requests, cookies or consent interface.
  */
 (() => {
   "use strict";
-  const ID = "";
+  const ID = "G-R6K3T53CHL";
+  // Keep production collection off until privacy disclosure and GA4 settings are reviewed.
+  const ENABLED = false;
+  if (!ENABLED) return;
   const paths = new Set(["/", "/index.html", "/demo.html"]);
   if (location.hostname !== "alcaintegra.github.io" || !paths.has(location.pathname) || !/^G-[A-Z0-9]+$/.test(ID)) return;
   const key = "alcaintegra.analytics.consent.v1";
-  let consent = null, started = false, loaded = false;
+  let consent = null, started = false, loaded = false, priceVisible = false, priceSent = false;
+  function reportPrice(){if(priceVisible && loaded && consent==="yes" && !priceSent){event("pricing_view");priceSent=true;}}
   try { consent = localStorage.getItem(key); } catch (_) {}
   const page = location.pathname === "/demo.html" ? "demo" : "commercial";
   const pageUrl = location.origin + (page === "demo" ? "/demo.html" : "/");
@@ -29,7 +33,7 @@
     window.gtag("config",ID,{send_page_view:false,allow_google_signals:false,allow_ad_personalization_signals:false,page_location:pageUrl,page_referrer:cleanReferrer()});
     const tag=document.createElement("script");tag.async=true;
     tag.src="https://www.googletagmanager.com/gtag/js?id="+encodeURIComponent(ID);
-    tag.onload=()=>{if(consent!=="yes")return;loaded=true;event("page_view",{page_title:page==="demo"?"AIRA Demo":"ALCAINTEGRA"});if(page==="demo")event("demo_view");};
+    tag.onload=()=>{if(consent!=="yes")return;loaded=true;event("page_view",{page_title:page==="demo"?"AIRA Demo":"ALCAINTEGRA"});if(page==="demo")event("demo_view");reportPrice();};
     document.head.append(tag);
   }
   const style=document.createElement("style");
@@ -43,6 +47,6 @@
   panel.addEventListener("click",e=>{const b=e.target.closest("[data-choice]");if(!b)return;consent=b.dataset.choice;try{localStorage.setItem(key,consent);}catch(_){}panel.hidden=true;toggle.setAttribute("aria-expanded","false");if(consent==="yes"){start();}else{window["ga-disable-"+ID]=true;clearCookies();if(started)location.reload();}});
   if(consent==="yes")start();
   const price=document.getElementById("inversion");
-  if(price&&"IntersectionObserver" in window){const io=new IntersectionObserver(entries=>{if(entries.some(x=>x.isIntersecting)&&loaded&&consent==="yes"){event("pricing_view");io.disconnect();}},{threshold:.25});io.observe(price);}
+  if(price&&"IntersectionObserver" in window){const io=new IntersectionObserver(entries=>{priceVisible=entries.some(x=>x.isIntersecting);reportPrice();if(priceSent)io.disconnect();},{threshold:.25});io.observe(price);}
   document.addEventListener("click",e=>{const el=e.target.closest("a,button");if(!el)return;if(el.matches('a[href="/demo.html"]'))event("demo_open");else if(el.id==="share-site")event("share_click");else if(el.dataset.dialog==="contact")event("contact_info_open");else if(page==="demo"&&["home","cases","payments","funds","control"].includes(el.dataset.view))event("demo_module",{module_name:el.dataset.view});});
 })();
